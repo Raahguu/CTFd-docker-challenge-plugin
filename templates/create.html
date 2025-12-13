@@ -1,0 +1,20 @@
+{% extends "admin/challenges/create.html" %}
+
+{% block header %}
+<div class="alert alert-secondary" role="alert">
+	Docker value challenges create docker instances to use them
+</div>
+{% endblock %}
+
+{% block type %}
+<div class="form-group">
+	<label for="image">Image<br>
+		<small class="form-text text-muted">
+			Which image should this container spawn from
+		</small>
+	</label>
+	<input type="input" class="form-control" name="image" placeholder="Enter image" required>
+</div>
+
+<input type="hidden" value="docker" name="type" id="chaltype">
+{% endblock %}
