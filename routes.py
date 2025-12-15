@@ -1,31 +1,29 @@
-import subprocess
-import json
-from flask import Blueprint, jsonify
+from flask import Blueprint, jsonify, abort
 from CTFd.utils.decorators import authed_only
 from CTFd.utils.user import get_current_user
 from .models import UserContainer, DockerChallenge
 from CTFd.models import db
+import requests_unixsocket
+
 
 docker_bp = Blueprint("docker", __name__)
 
-def docker_query(path : str, method : str = "GET", body = ""):
+def docker_query(path : str, method : str = "GET", body : dict = {}):
     assert path.count(' ') == 0
+    path = path.lstrip("/")
 
-    command = f'curl --unix-socket=/var/run/docker.sock http://v1.52/{path}'.split(' ')
-    if method.upper() == "POST":
-        command += [f'-H "Content-Type: application/json" -X {method} -d {body}']
+    session = requests_unixsocket.Session()
+    response = session.request(
+        method=method.lower(), 
+        url=f'http+unix://%2Fvar%2Frun%2Fdocker.sock/v1.52/{path}', 
+        json=body if body else None
+    )
 
-    result = subprocess.run(command, stdout=subprocess.PIPE)
+    if not response.text: return {}
 
-    if (result.stderr != ""):
-        raise AssertionError(result.stderr)
-
-
-    data = json.loads(result.stdout)
-    try:
-        if (data["message"] == ""): raise ZeroDivisionError
+    data = response.json()
+    if "message" in data and data["message"]:
         raise ValueError(data["message"])
-    except ZeroDivisionError: pass
 
     return data
 
@@ -37,22 +35,28 @@ def spawn_container(challenge_id):
     challenge = DockerChallenge.query.get_or_404(challenge_id)
 
     existing = UserContainer.query.filter_by(
-        user_id=user.id, challenge_id=challenge.id
+        user_id=user.id
     ).first()
     if existing:
-        return jsonify({"ip": existing.ip})
+        if existing.challenge_id == challenge_id:
+            return jsonify({"success": True, "ip": existing.ip})
+        else:
+            other_challenge = DockerChallenge.query.get_or_404(existing.challenge_id)
+            return jsonify({"success": False, "error_code": 409, "challenge": other_challenge.name})
 
     # Create the container
-    data = f'"Image": "{challenge.image}"'
+    data = {
+        "Image": challenge.image
+    }
     container_id = docker_query("/containers/create", "POST", data)["Id"]
 
     # Start the container
-    docker_query(f"/containers/{container_id}/start")
+    docker_query(f"/containers/{container_id}/start", "POST")
 
     # Get the container as json
     container_json = docker_query(f"/containers/{container_id}/json")
 
-    ip = container_json["NetworkSettings"]["Networks"][0]["IPAddress"]
+    ip = next(iter(container_json["NetworkSettings"]["Networks"].values()))["IPAddress"]
 
     record = UserContainer(
         user_id = user.id,
@@ -63,4 +67,43 @@ def spawn_container(challenge_id):
     db.session.add(record)
     db.session.commit()
 
-    return jsonify({"ip": ip})
+    return jsonify({"success": True, "ip": ip})
+
+@docker_bp.route("/docker/kill/<int:challenge_id>", methods=["POST"])
+@authed_only
+def kill_container(challenge_id):
+    user = get_current_user()
+    challenge = DockerChallenge.query.get_or_404(challenge_id)
+
+    existing = UserContainer.query.filter_by(
+        user_id=user.id, challenge_id=challenge.id
+    ).first()
+    if not existing:
+        abort(404)
+
+    # Delete the container
+    docker_query(f"/containers/{existing.container_id}?force=true", "DELETE")
+
+    db.session.delete(existing)
+    db.session.commit()
+
+    return jsonify({"status": "success"})
+
+@docker_bp.route("/docker/status/<int:challenge_id>", methods=["GET"])
+@authed_only
+def check_container(challenge_id):
+    user = get_current_user()
+    challenge = DockerChallenge.query.get_or_404(challenge_id)
+
+    existing = UserContainer.query.filter_by(
+        user_id=user.id, challenge_id=challenge.id
+    ).first()
+    if not existing:
+        return jsonify({"status": False})
+    
+    # As it exists, return the ip
+    container_json = docker_query(f"/containers/{existing.container_id}/json")
+
+    ip = next(iter(container_json["NetworkSettings"]["Networks"].values()))["IPAddress"]
+
+    return jsonify({"status": True, "ip": ip})

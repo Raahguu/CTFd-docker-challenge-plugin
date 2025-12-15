@@ -1,3 +1,16 @@
 {% extends "challenge.html" %}
 
-<p id="ip">DEFAULT</p>
+{% block description %}
+    {{ super() }}
+
+    <p id="error_box" hidden></p>
+    <div id="no_container">
+        <button onclick="spawn_container()">Deploy Instance</button>
+    </div>
+    <div id="container_running" hidden>
+        <div>Container IP: <p id="ip">N/A</p></div>
+        <button onclick="kill_container()">Kill Instance</button>
+    </div>
+    <br>
+
+{% endblock %}

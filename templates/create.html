@@ -6,7 +6,7 @@
 </div>
 {% endblock %}
 
-{% block type %}
+{% block description %}
 <div class="form-group">
 	<label for="image">Image<br>
 		<small class="form-text text-muted">
@@ -16,5 +16,10 @@
 	<input type="input" class="form-control" name="image" placeholder="Enter image" required>
 </div>
 
+{{ super() }}
+
+{% endblock %}
+
+{% block type %}
 <input type="hidden" value="docker" name="type" id="chaltype">
 {% endblock %}
