@@ -4,6 +4,8 @@ from CTFd.utils.user import get_current_user
 from .models import UserContainer, DockerChallenge
 from CTFd.models import db
 import requests_unixsocket
+import time
+from threading import Thread
 
 
 docker_bp = Blueprint("docker", __name__)
@@ -39,7 +41,7 @@ def spawn_container(challenge_id):
     ).first()
     if existing:
         if existing.challenge_id == challenge_id:
-            return jsonify({"success": True, "ip": existing.ip})
+            return jsonify({"success": True, "ip": existing.ip, "expiry_time": existing.expiry_time})
         else:
             other_challenge = DockerChallenge.query.get_or_404(existing.challenge_id)
             return jsonify({"success": False, "error_code": 409, "challenge": other_challenge.name})
@@ -58,25 +60,44 @@ def spawn_container(challenge_id):
 
     ip = next(iter(container_json["NetworkSettings"]["Networks"].values()))["IPAddress"]
 
+    expiry_time = int(time.time()) + 60 * 30 # the current time plus 30 minutes
+
     record = UserContainer(
         user_id = user.id,
         challenge_id = challenge.id,
         container_id = container_id,
-        ip = ip
+        ip = ip,
+        expiry_time = expiry_time
     )
     db.session.add(record)
     db.session.commit()
 
-    return jsonify({"success": True, "ip": ip})
+    return jsonify({"success": True, "ip": ip, "expiry_time": expiry_time})
+
+@docker_bp.route("/docker/expiry/expand/<int:challenge_id>", methods=["POST"])
+@authed_only
+def increase_expiry_time(challenge_id):
+    user = get_current_user()
+
+    existing = UserContainer.query.filter_by(
+        user_id=user.id
+    ).first()
+    if not existing:
+        abort(404)
+
+    # increase the expiry time
+    existing.expiry_time += 60 * 15 # add 15 minutes till expiry
+    db.session.commit()
+
+    return jsonify({"success": True, "expiry_time": existing.expiry_time})
 
 @docker_bp.route("/docker/kill/<int:challenge_id>", methods=["POST"])
 @authed_only
 def kill_container(challenge_id):
     user = get_current_user()
-    challenge = DockerChallenge.query.get_or_404(challenge_id)
 
     existing = UserContainer.query.filter_by(
-        user_id=user.id, challenge_id=challenge.id
+        user_id=user.id
     ).first()
     if not existing:
         abort(404)
@@ -87,7 +108,7 @@ def kill_container(challenge_id):
     db.session.delete(existing)
     db.session.commit()
 
-    return jsonify({"status": "success"})
+    return jsonify({"success": True})
 
 @docker_bp.route("/docker/status/<int:challenge_id>", methods=["GET"])
 @authed_only
@@ -106,4 +127,31 @@ def check_container(challenge_id):
 
     ip = next(iter(container_json["NetworkSettings"]["Networks"].values()))["IPAddress"]
 
-    return jsonify({"status": True, "ip": ip})
+    return jsonify({"status": True, "ip": ip, "expiry_time": existing.expiry_time})
+
+def start_cleaner(app):
+    def loop():
+        while True:
+            with app.app_context():
+                cleanup_expired_containers()
+            time.sleep(30)
+    Thread(target=loop, daemon=True).start()
+
+def cleanup_expired_containers():
+    now = time.time()
+    expired = UserContainer.query.filter(
+        UserContainer.expiry_time <= now
+    ).all()
+
+    for uc in expired:
+        try:
+            docker_query(
+                f"/containers/{uc.container_id}?force=true",
+                "DELETE"
+            )
+        except Exception:
+            pass  # container already gone
+
+        db.session.delete(uc)
+
+    db.session.commit()

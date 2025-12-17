@@ -11,6 +11,7 @@ class DockerChallenge(Challenges):
 
     __mapper_args__ = {
         "polymorphic_identity": "docker",
+        "inherit_condition": id == Challenges.id,
     }
 
     def __init__(self, *args, **kwargs):
@@ -24,7 +25,8 @@ class DockerChallenge(Challenges):
 
 class UserContainer(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(db.Integer)
-    challenge_id = db.Column(db.Integer)
+    user_id = db.Column(db.Integer, db.ForeignKey("users.id", ondelete="CASCADE"))
+    challenge_id = db.Column(db.Integer, db.ForeignKey("challenges.id", ondelete="CASCADE"))
     container_id = db.Column(db.String(64))
-    ip = db.Column(db.String(64))
+    ip = db.Column(db.String(64)) 
+    expiry_time = db.Column(db.Integer) # UNIX timestamp

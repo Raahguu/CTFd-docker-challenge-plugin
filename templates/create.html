@@ -6,17 +6,17 @@
 </div>
 {% endblock %}
 
-{% block description %}
-<div class="form-group">
-	<label for="image">Image<br>
-		<small class="form-text text-muted">
-			Which image should this container spawn from
-		</small>
-	</label>
-	<input type="input" class="form-control" name="image" placeholder="Enter image" required>
-</div>
+{% block message %}
+	{{ super() }}
 
-{{ super() }}
+	<div class="form-group">
+		<label for="image">Image<br>
+			<small class="form-text text-muted">
+				Which image should this container spawn from
+			</small>
+		</label>
+		<input type="input" class="form-control" name="image" placeholder="Enter image" required>
+	</div>
 
 {% endblock %}
 

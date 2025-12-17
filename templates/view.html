@@ -8,8 +8,10 @@
         <button onclick="spawn_container()">Deploy Instance</button>
     </div>
     <div id="container_running" hidden>
-        <div>Container IP: <p id="ip">N/A</p></div>
-        <button onclick="kill_container()">Kill Instance</button>
+        <p id="container_ip">Container IP: <strong id="ip">N/A</strong></p>
+        <p id="container_expiry">Time till expiry: <strong id="expiry_timer_minutes">0</strong>m <strong id="expiry_timer_seconds">0</strong>s</p>
+        <button onclick="increase_expiry_time()" id="container_life_extender">+15 minutes till expiry time</button>
+        <button onclick="kill_container()" id="container_killer">Kill Instance</button>
     </div>
     <br>
 
