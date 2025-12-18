@@ -1,8 +1,5 @@
 from CTFd.models import db, Challenges
-from CTFd.exceptions.challenges import (
-    ChallengeCreateException,
-    ChallengeUpdateException,
-)
+from CTFd.exceptions.challenges import ChallengeCreateException
 
 class DockerChallenge(Challenges):
     __tablename__ = "docker_challenges"

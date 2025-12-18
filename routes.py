@@ -1,33 +1,14 @@
-from flask import Blueprint, jsonify, abort
+from flask import Blueprint, jsonify, abort, Response
 from CTFd.utils.decorators import authed_only
 from CTFd.utils.user import get_current_user
 from .models import UserContainer, DockerChallenge
 from CTFd.models import db
-import requests_unixsocket
 import time
-from threading import Thread
+from .container_controlers import docker_query
+from .vpn import generate_user_vpn
 
 
 docker_bp = Blueprint("docker", __name__)
-
-def docker_query(path : str, method : str = "GET", body : dict = {}):
-    assert path.count(' ') == 0
-    path = path.lstrip("/")
-
-    session = requests_unixsocket.Session()
-    response = session.request(
-        method=method.lower(), 
-        url=f'http+unix://%2Fvar%2Frun%2Fdocker.sock/v1.52/{path}', 
-        json=body if body else None
-    )
-
-    if not response.text: return {}
-
-    data = response.json()
-    if "message" in data and data["message"]:
-        raise ValueError(data["message"])
-
-    return data
 
 
 @docker_bp.route("/docker/spawn/<int:challenge_id>", methods=["POST"])
@@ -129,29 +110,17 @@ def check_container(challenge_id):
 
     return jsonify({"status": True, "ip": ip, "expiry_time": existing.expiry_time})
 
-def start_cleaner(app):
-    def loop():
-        while True:
-            with app.app_context():
-                cleanup_expired_containers()
-            time.sleep(30)
-    Thread(target=loop, daemon=True).start()
+@docker_bp.route("/docker/openvpn", methods=["GET"])
+@authed_only
+def get_openvpn():
+    user = get_current_user()
+    ovpn_content = generate_user_vpn(user.username)
 
-def cleanup_expired_containers():
-    now = time.time()
-    expired = UserContainer.query.filter(
-        UserContainer.expiry_time <= now
-    ).all()
-
-    for uc in expired:
-        try:
-            docker_query(
-                f"/containers/{uc.container_id}?force=true",
-                "DELETE"
-            )
-        except Exception:
-            pass  # container already gone
-
-        db.session.delete(uc)
-
-    db.session.commit()
+    return Response(
+        ovpn_content,
+        200,
+        mimetype="application/x-openvpn-profile",
+        headers={
+            "Content-Disposition": f"attachment; filename=redroom_hackathon.ovpn"
+        }
+    )

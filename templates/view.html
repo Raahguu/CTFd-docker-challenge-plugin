@@ -13,6 +13,8 @@
         <button onclick="increase_expiry_time()" id="container_life_extender">+15 minutes till expiry time</button>
         <button onclick="kill_container()" id="container_killer">Kill Instance</button>
     </div>
-    <br>
+    <div class="container mt-4">
+        <a href="{{ url_for('docker_bp.get_openvpn') }}" class="btn btn-primary">Download VPN Config</a>
+    </div>
 
 {% endblock %}
