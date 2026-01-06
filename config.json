@@ -1,4 +1,5 @@
 {
-    "name": "Docker Challenges",
-    "route": "/admin/docker_challenges"
+  "name": "Docker Challenges",
+  "route": "/admin/docker_challenges",
+  "author": "Raahguu"
 }

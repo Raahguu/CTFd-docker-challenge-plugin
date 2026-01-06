@@ -1,0 +1,131 @@
+{% extends "admin/base.html" %} {% block content %}
+<div class="jumbotron">
+    <div class="container">
+        <h1>Docker Challenges Settings</h1>
+
+        <form method="POST" accept-charset="utf-8">
+            <div class="form-group">
+                <input
+                    type="hidden"
+                    value="{{ Session.nonce }}"
+                    name="nonce"
+                    id="nonce"
+                />
+                <label>External Gateway</label>
+                <input
+                    class="form-control"
+                    name="external_gateway"
+                    value="{{ external_gateway or '' }}"
+                />
+                <br />
+                <label>CA Name</label>
+                <input
+                    class="form-control"
+                    name="ca_name"
+                    value="{{ ca_name or '' }}"
+                />
+            </div>
+
+            <button class="btn btn-primary mt-3">Save</button>
+        </form>
+
+        <br />
+
+        <button id="toggle_vpn_button" onclick="toggle_vpn()">
+            Toggle VPN
+        </button>
+        <p id="error_text" hidden></p>
+    </div>
+</div>
+
+<style>
+    #error_text {
+        color: red;
+    }
+
+    button {
+        color: white;
+        border-radius: 8px;
+    }
+
+    .spawn {
+        background-color: green;
+    }
+
+    .kill {
+        background-color: red;
+    }
+</style>
+{% endblock %} {% block scripts %} {{ super() }}
+<script>
+    document.addEventListener("DOMContentLoaded", () => {
+        toggle_button = document.getElementById("toggle_vpn_button");
+        update_button();
+
+        function toggle_vpn() {
+            CTFd.fetch("/docker/vpn", {
+                method: toggle_button.classList.contains("spawn")
+                    ? "POST"
+                    : "DELETE",
+                headers: { "Content-Type": "application/json" },
+            })
+                .then((res) => {
+                    if (res.status == 403) {
+                        throw new Error("You must be logged in as an admin");
+                    }
+                    return res.json();
+                })
+                .then((data) => {
+                    if (data.success == false) {
+                        throw new Error(data.message);
+                    }
+                    update_button();
+                })
+                .catch((err) => {
+                    error_text = document.getElementById("error_text");
+                    error_text.hidden = false;
+                    error_text.innerText = `Error: ${err.message}`;
+                });
+        }
+
+        function update_button() {
+            CTFd.fetch("/docker/vpn")
+                .then((res) => {
+                    if (res.status == 403) {
+                        throw new Error("You must be logged in as an admin");
+                    }
+                    return res.json();
+                })
+                .then((data) => {
+                    if (data.success == false) {
+                        throw new Error(data.message);
+                    }
+                    error_text = document.getElementById("error_text");
+                    error_text.hidden = true;
+                    if (data.status == true) {
+                        set_button_to_kill();
+                    } else if (data.status == false) {
+                        set_button_to_spawn();
+                    }
+                })
+                .catch((err) => {
+                    error_text = document.getElementById("error_text");
+                    error_text.hidden = false;
+                    error_text.innerText = `Error: ${err.message}`;
+                });
+        }
+
+        function set_button_to_kill() {
+            toggle_button.className = "kill";
+            toggle_button.innerText = "Kill VPN";
+        }
+
+        function set_button_to_spawn() {
+            toggle_button.className = "spawn";
+            toggle_button.innerText = "Spawn VPN";
+        }
+
+        window.toggle_vpn = toggle_vpn;
+    });
+</script>
+{% endblock %}

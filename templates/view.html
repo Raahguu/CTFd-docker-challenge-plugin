@@ -1,20 +1,26 @@
-{% extends "challenge.html" %}
-
-{% block description %}
-    {{ super() }}
-
-    <p id="error_box" hidden></p>
-    <div id="no_container">
-        <button onclick="spawn_container()">Deploy Instance</button>
-    </div>
-    <div id="container_running" hidden>
-        <p id="container_ip">Container IP: <strong id="ip">N/A</strong></p>
-        <p id="container_expiry">Time till expiry: <strong id="expiry_timer_minutes">0</strong>m <strong id="expiry_timer_seconds">0</strong>s</p>
-        <button onclick="increase_expiry_time()" id="container_life_extender">+15 minutes till expiry time</button>
-        <button onclick="kill_container()" id="container_killer">Kill Instance</button>
-    </div>
-    <div class="container mt-4">
-        <a href="{{ url_for('docker_bp.get_openvpn') }}" class="btn btn-primary">Download VPN Config</a>
-    </div>
+{% extends "challenge.html" %} {% block description %} {{ super() }}
+<p id="error_box" hidden></p>
+<div id="no_container">
+    <button onclick="spawn_container()">Deploy Instance</button>
+</div>
+<div id="container_running" hidden>
+    <p id="container_ip">Container IP: <strong id="ip">N/A</strong></p>
+    <p id="container_expiry">
+        Time till expiry: <strong id="expiry_timer_minutes">0</strong>m
+        <strong id="expiry_timer_seconds">0</strong>s
+    </p>
+    <button onclick="increase_expiry_time()" id="container_life_extender">
+        +15 minutes till expiry time
+    </button>
+    <button onclick="kill_container()" id="container_killer">
+        Kill Instance
+    </button>
+</div>
+<div class="container mt-4">
+    <a href="/docker/ovpn/config" class="btn btn-primary"
+        >Download VPN Config</a
+    >
+</div>
+<br />
 
 {% endblock %}
