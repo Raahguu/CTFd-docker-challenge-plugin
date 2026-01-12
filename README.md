@@ -36,6 +36,7 @@ services:
       
     ...
 ```
+3. in the `requirements.txt`, and the `requirements.in`, add the line `requests_unixsocket==0.4.1` to the end
 3. Run the CTFd instance, and set it up
 4. Go to the config page for the plugin at: `/admin/docker_challenges`
 5. Fill out the page:
