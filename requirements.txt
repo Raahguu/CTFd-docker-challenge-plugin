@@ -1,4 +1,3 @@
 flask
-requests_unixsocket
-requests
-socket
+requests_unixsocket==0.4.1
+request

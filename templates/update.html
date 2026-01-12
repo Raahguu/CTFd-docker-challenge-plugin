@@ -1,12 +1,17 @@
-{% extends "admin/challenges/update.html" %}
-
-{% block value %}
+{% extends "admin/challenges/update.html" %} {% block value %}
 <div class="form-group">
-	<label for="image">Image<br>
-		<small class="form-text text-muted">
-			Which image should this container spawn from
-		</small>
-	</label>
-	<input type="input" class="form-control chal-image" name="image" value="{{ challenge.image }}" disabled>
+    <label for="image"
+        >Image<br />
+        <small class="form-text text-muted">
+            Which image should this container spawn from
+        </small>
+    </label>
+    <input
+        type="input"
+        class="form-control chal-image"
+        name="image"
+        value="{{ challenge.image }}"
+        disabled
+    />
 </div>
 {% endblock %}

@@ -1,25 +1,65 @@
-{% extends "admin/challenges/create.html" %}
-
-{% block header %}
+{% extends "admin/challenges/create.html" %} {% block header %}
 <div class="alert alert-secondary" role="alert">
-	Docker value challenges create docker instances to use them
+    Docker value challenges create docker instances to use them
 </div>
-{% endblock %}
+{% endblock %} {% block message %} {{ super() }}
 
-{% block message %}
-	{{ super() }}
+<div class="form-group">
+    <label for="image"
+        >Image<br />
+        <small class="form-text text-muted">
+            Which image should this container spawn from
+        </small>
+    </label>
+    <input
+        type="input"
+        class="form-control"
+        name="image"
+        placeholder="Enter image"
+        required
+    />
+</div>
+{% endblock %} {% block value %}
+<div class="form-group">
+    <label for="initial">Initial Value</label>
+    <input
+        type="number"
+        class="form-control"
+        name="initial"
+        id="initial"
+        required
+    />
+</div>
 
-	<div class="form-group">
-		<label for="image">Image<br>
-			<small class="form-text text-muted">
-				Which image should this container spawn from
-			</small>
-		</label>
-		<input type="input" class="form-control" name="image" placeholder="Enter image" required>
-	</div>
+<div class="form-group">
+    <label for="minimum">Minimum Value</label>
+    <input
+        type="number"
+        class="form-control"
+        name="minimum"
+        id="minimum"
+        required
+    />
+</div>
 
-{% endblock %}
+<div class="form-group">
+    <label for="decay">Decay Value</label>
+    <input
+        type="number"
+        class="form-control"
+        name="decay"
+        id="decay"
+        required
+    />
+</div>
 
-{% block type %}
-<input type="hidden" value="docker" name="type" id="chaltype">
+<div class="form-group">
+    <label for="function">Scoring Function</label>
+    <select class="form-control" name="function" id="function">
+        <option value="logarithmic">Logarithmic</option>
+        <option value="linear">Linear</option>
+    </select>
+</div>
+{% endblock %} {% block type %}
+<input type="hidden" value="docker" name="type" id="chaltype" />
 {% endblock %}
